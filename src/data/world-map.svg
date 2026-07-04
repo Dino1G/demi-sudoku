@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 180" class="world-map" role="img" aria-label="World map">
+  <rect x="0" y="0" width="360" height="180" class="ocean-bg" id="oceans" />
+  <path id="arctic" class="region" d="M120 4 L260 4 L255 16 L124 16 Z" />
+  <path id="north-america" class="region" d="M30 30 L110 30 L100 80 L40 85 Z" />
+  <path id="central-america" class="region" d="M70 85 L95 85 L85 105 L72 100 Z" />
+  <path id="south-america" class="region" d="M85 105 L120 105 L110 165 L90 160 Z" />
+  <path id="europe" class="region" d="M170 30 L210 32 L205 60 L172 58 Z" />
+  <path id="north-africa" class="region" d="M170 62 L215 62 L212 90 L172 88 Z" />
+  <path id="sub-saharan-africa" class="region" d="M175 92 L215 92 L205 125 L182 122 Z" />
+  <path id="southern-africa" class="region" d="M188 125 L210 125 L200 150 L190 148 Z" />
+  <path id="middle-east" class="region" d="M215 60 L245 60 L242 88 L216 86 Z" />
+  <path id="central-asia" class="region" d="M215 32 L270 34 L265 58 L214 56 Z" />
+  <path id="south-asia" class="region" d="M246 60 L275 62 L270 88 L248 86 Z" />
+  <path id="east-asia" class="region" d="M270 34 L320 36 L315 68 L268 62 Z" />
+  <path id="southeast-asia" class="region" d="M275 70 L315 72 L308 95 L278 92 Z" />
+  <path id="siberia" class="region" d="M215 12 L330 14 L325 32 L214 30 Z" />
+  <path id="australia" class="region" d="M300 120 L340 122 L335 150 L302 148 Z" />
+  <path id="oceania" class="region" d="M330 100 L352 100 L350 118 L332 116 Z" />
+  <path id="antarctica" class="region" d="M60 170 L300 170 L295 178 L64 178 Z" />
+</svg>
