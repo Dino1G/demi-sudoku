@@ -1,4 +1,4 @@
-const CACHE = 'demi-sudoku-v1';
+const CACHE = 'demi-sudoku-v2';
 const ASSETS = [
     './',
     './index.html',

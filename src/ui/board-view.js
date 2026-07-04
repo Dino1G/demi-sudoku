@@ -3,11 +3,16 @@ import { CELLS, rc, PEERS } from './../engine/grid.js';
 export function createBoardView(container, onCellClick) {
     container.classList.add('board');
     const cells = [];
+    const baseClass = [];
     for (let i = 0; i < CELLS; i++) {
-        const el = document.createElement('div');
-        el.className = 'cell';
         const [r, c] = rc(i);
-        if ((Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1) el.classList.add('box-alt');
+        let cls = 'cell';
+        if ((Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1) cls += ' box-alt';
+        if (c % 3 === 2 && c !== 8) cls += ' br';
+        if (r % 3 === 2 && r !== 8) cls += ' bb';
+        baseClass.push(cls);
+        const el = document.createElement('div');
+        el.className = cls;
         el.addEventListener('click', () => onCellClick(i));
         container.appendChild(el);
         cells.push(el);
@@ -20,12 +25,12 @@ export function createBoardView(container, onCellClick) {
         for (let i = 0; i < CELLS; i++) {
             const el = cells[i];
             const v = state.values[i];
-            el.className = 'cell' + (isBoxAlt(i) ? ' box-alt' : '');
+            el.className = baseClass[i];
             if (state.given[i]) el.classList.add('given');
             else if (v !== 0) el.classList.add('filled');
             if (i === sel) el.classList.add('selected');
             else if (peers.has(i)) el.classList.add('peer');
-            if (selVal !== 0 && v === selVal) el.classList.add('same');
+            if (selVal !== 0 && v === selVal && i !== sel) el.classList.add('same');
             if (settings.errorHighlight && state.wrongCells && state.wrongCells.has(i)) {
                 el.classList.add('error');
             }
@@ -43,11 +48,6 @@ export function createBoardView(container, onCellClick) {
                 el.appendChild(notes);
             }
         }
-    }
-
-    function isBoxAlt(i) {
-        const [r, c] = rc(i);
-        return (Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1;
     }
 
     return { render };

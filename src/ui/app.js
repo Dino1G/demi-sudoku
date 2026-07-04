@@ -7,14 +7,23 @@ import { createControls } from './controls.js';
 import { createMenu, formatTime } from './menu.js';
 import { createEncyclopediaView } from './encyclopedia-view.js';
 
+const LABELS = { easy: '簡單', medium: '中等', hard: '困難', expert: '專家' };
+
 const screens = {
     menu: document.getElementById('screen-menu'),
     game: document.getElementById('screen-game'),
     encyclopedia: document.getElementById('screen-encyclopedia'),
 };
+const overlay = document.getElementById('overlay');
 
 function show(name) {
     for (const [k, el] of Object.entries(screens)) el.classList.toggle('hidden', k !== name);
+}
+
+function digitCounts(values) {
+    const counts = new Array(10).fill(0);
+    for (const v of values) if (v) counts[v] += 1;
+    return counts;
 }
 
 async function main() {
@@ -33,11 +42,11 @@ async function main() {
     let timerId = null;
     let gameUi = null;
 
-    // Kept as a mutable object (rather than plain values) so renderMenu()
-    // can refresh stats/settings from storage in place before every render.
     const menuOpts = {
         stats: storage.loadStats(),
         settings: storage.loadSettings(),
+        collectedCount: 0,
+        totalAnimals: animalsApi.list.length,
         onStart: startGame,
         onOpenEncyclopedia: openEncyclopedia,
         onToggleSetting: (key) => {
@@ -56,23 +65,37 @@ async function main() {
     function renderMenu() {
         menuOpts.stats = storage.loadStats();
         menuOpts.settings = storage.loadSettings();
+        menuOpts.collectedCount = storage.loadCollection().unlocked.length;
         menu.render();
     }
 
-    function buildGameUi(animalId) {
+    function buildGameUi(animalId, difficulty) {
         screens.game.innerHTML = '';
         notesMode = false;
+
+        const top = document.createElement('div');
+        top.className = 'game-top';
         const back = document.createElement('button');
-        back.textContent = '選單';
+        back.className = 'btn-ghost';
+        back.textContent = '‹ 選單';
         back.addEventListener('click', () => { stopTimer(); renderMenu(); show('menu'); });
+        const pill = document.createElement('span');
+        pill.className = 'level-pill';
+        pill.textContent = LABELS[difficulty] || difficulty;
+        const timer = document.createElement('span');
+        timer.className = 'timer';
+        top.append(back, pill, timer);
+
+        const badge = document.createElement('div');
+        badge.className = 'mascot-badge';
         const mascot = document.createElement('div');
         mascot.className = 'mascot';
         mascot.textContent = animalsApi.byId(animalId).emoji;
-        const timer = document.createElement('div');
-        timer.className = 'timer';
+        badge.appendChild(mascot);
+
         const boardHost = document.createElement('div');
         const controlsHost = document.createElement('div');
-        screens.game.append(back, mascot, timer, boardHost, controlsHost);
+        screens.game.append(top, badge, boardHost, controlsHost);
 
         const bv = createBoardView(boardHost, (i) => { game.select(i); renderGame(); });
         gameUi = { bv, timer, mascot };
@@ -106,6 +129,7 @@ async function main() {
         const st = game.state();
         st.wrongCells = wrongCells(st);
         gameUi.bv.render(st, storage.loadSettings());
+        gameUi.controls.setCounts(digitCounts(st.values));
     }
 
     function afterMove() {
@@ -130,16 +154,64 @@ async function main() {
 
     function onWin(st) {
         stopTimer();
-        storage.recordResult(st.difficulty, { completed: true, timeMs: Date.now() - startedAt });
+        const timeMs = Date.now() - startedAt;
+        storage.recordResult(st.difficulty, { completed: true, timeMs });
         const newly = storage.unlock(st.animalId);
         storage.clearSaved();
+        showWin(st, timeMs, newly);
+    }
+
+    function showWin(st, timeMs, newly) {
         const a = animalsApi.byId(st.animalId);
-        const msg = newly ? `解鎖新動物：${a.name_zh}！` : `完成！用時 ${formatTime(Date.now() - startedAt)}`;
-        setTimeout(() => {
-            alert(msg); // simple win feedback; replace with in-page banner if desired
-            renderMenu();
-            show('menu');
-        }, 50);
+        overlay.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'win-card';
+
+        const emoji = document.createElement('div');
+        emoji.className = 'win-emoji';
+        emoji.textContent = a.emoji;
+
+        const title = document.createElement('h2');
+        title.className = 'win-title';
+        title.textContent = newly ? '解鎖新動物！' : '完成！';
+        card.append(emoji, title);
+
+        if (newly) {
+            const animal = document.createElement('p');
+            animal.className = 'win-animal';
+            animal.textContent = `${a.name_zh} · ${a.name_en}`;
+            card.appendChild(animal);
+        }
+
+        const time = document.createElement('p');
+        time.className = 'win-time';
+        time.textContent = `用時 ${formatTime(timeMs)} · ${LABELS[st.difficulty]}`;
+        card.appendChild(time);
+
+        const actions = document.createElement('div');
+        actions.className = 'win-actions';
+        actions.append(
+            actionButton('再一局', true, () => { hideOverlay(); startGame(st.difficulty); }),
+            actionButton(newly ? '看看新動物' : '動物圖鑑', false, () => { hideOverlay(); openEncyclopedia(); }),
+            actionButton('回選單', false, () => { hideOverlay(); renderMenu(); show('menu'); })
+        );
+        card.appendChild(actions);
+
+        overlay.appendChild(card);
+        overlay.classList.remove('hidden');
+    }
+
+    function actionButton(label, primary, onClick) {
+        const b = document.createElement('button');
+        b.className = 'btn' + (primary ? ' primary' : '');
+        b.textContent = label;
+        b.addEventListener('click', onClick);
+        return b;
+    }
+
+    function hideOverlay() {
+        overlay.classList.add('hidden');
+        overlay.innerHTML = '';
     }
 
     function startTimer(elapsedMs = 0) {
@@ -171,7 +243,7 @@ async function main() {
                 difficulty: e.data.difficulty,
                 animalId: mascotId,
             });
-            buildGameUi(mascotId);
+            buildGameUi(mascotId, e.data.difficulty);
             renderGame();
             startTimer();
             show('game');
@@ -179,7 +251,6 @@ async function main() {
         const onError = () => {
             worker.removeEventListener('message', onMsg);
             worker.removeEventListener('error', onError);
-            alert('題目產生失敗，請再試一次。');
             renderMenu();
             show('menu');
         };
@@ -187,7 +258,7 @@ async function main() {
         worker.addEventListener('error', onError);
         worker.postMessage({ type: 'generate', difficulty, id });
         show('game');
-        screens.game.innerHTML = '<p style="text-align:center">產生題目中…</p>';
+        screens.game.innerHTML = '<p class="loading">產生題目中…</p>';
     }
 
     function openEncyclopedia() {
@@ -211,7 +282,7 @@ async function main() {
             difficulty: saved.difficulty,
             animalId: saved.animalId,
         });
-        buildGameUi(saved.animalId);
+        buildGameUi(saved.animalId, saved.difficulty);
         const st = game.state();
         for (let i = 0; i < 81; i++) {
             if (st.given[i]) continue;
