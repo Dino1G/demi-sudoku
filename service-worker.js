@@ -1,4 +1,4 @@
-const CACHE = 'demi-sudoku-v3';
+const CACHE = 'demi-sudoku-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
     './src/ui/board-view.js',
     './src/ui/controls.js',
     './src/ui/encyclopedia-view.js',
+    './src/ui/feedback-view.js',
     './src/ui/brand.js',
     './src/game/storage.js',
     './src/game/game.js',

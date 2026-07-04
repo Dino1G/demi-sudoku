@@ -70,7 +70,15 @@ export function createMenu(container, opts) {
             toggle('顯示計時器', 'showTimer')
         );
 
-        container.append(hero, head, levels, enc, settings);
+        const foot = document.createElement('div');
+        foot.className = 'menu-foot';
+        const feedback = document.createElement('button');
+        feedback.className = 'btn-ghost';
+        feedback.textContent = '意見回饋';
+        feedback.addEventListener('click', () => opts.onOpenFeedback());
+        foot.appendChild(feedback);
+
+        container.append(hero, head, levels, enc, settings, foot);
 
         function toggle(label, key) {
             const wrap = document.createElement('label');

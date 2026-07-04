@@ -7,13 +7,16 @@ import { createBoardView } from './board-view.js';
 import { createControls } from './controls.js';
 import { createMenu, formatTime } from './menu.js';
 import { createEncyclopediaView } from './encyclopedia-view.js';
+import { createFeedbackView } from './feedback-view.js';
 
 const LABELS = { easy: '簡單', medium: '中等', hard: '困難', expert: '專家' };
+const APP_VERSION = 'demi-sudoku-v4';
 
 const screens = {
     menu: document.getElementById('screen-menu'),
     game: document.getElementById('screen-game'),
     encyclopedia: document.getElementById('screen-encyclopedia'),
+    feedback: document.getElementById('screen-feedback'),
 };
 const overlay = document.getElementById('overlay');
 
@@ -40,7 +43,7 @@ function animalPhoto(animal, imageLoader, className) {
     img.alt = animal.name_zh;
     img.addEventListener('load', () => wrap.classList.add('loaded'));
     img.addEventListener('error', () => img.remove());
-    imageLoader.getImage(animal).then((url) => { if (url) img.src = url; else img.remove(); });
+    imageLoader.getInfo(animal).then((info) => { if (info.image) img.src = info.image; else img.remove(); });
     wrap.appendChild(img);
     return wrap;
 }
@@ -61,6 +64,7 @@ async function main() {
     let startedAt = 0;
     let timerId = null;
     let gameUi = null;
+    let paused = false;
 
     const menuOpts = {
         stats: storage.loadStats(),
@@ -69,6 +73,7 @@ async function main() {
         totalAnimals: animalsApi.list.length,
         onStart: startGame,
         onOpenEncyclopedia: openEncyclopedia,
+        onOpenFeedback: openFeedback,
         onToggleSetting: (key) => {
             const s = storage.loadSettings();
             s[key] = !s[key];
@@ -82,6 +87,11 @@ async function main() {
     const encyclopedia = createEncyclopediaView(screens.encyclopedia, animalsApi, mapSvg, imageLoader);
     encyclopedia.onBack(() => { renderMenu(); show('menu'); });
 
+    const feedback = createFeedbackView(screens.feedback, {
+        appVersion: APP_VERSION,
+        onBack: () => { renderMenu(); show('menu'); },
+    });
+
     function renderMenu() {
         menuOpts.stats = storage.loadStats();
         menuOpts.settings = storage.loadSettings();
@@ -92,6 +102,7 @@ async function main() {
     function buildGameUi(animalId, difficulty) {
         screens.game.innerHTML = '';
         notesMode = false;
+        paused = false;
 
         const top = document.createElement('div');
         top.className = 'game-top';
@@ -102,9 +113,16 @@ async function main() {
         const pill = document.createElement('span');
         pill.className = 'level-pill';
         pill.textContent = LABELS[difficulty] || difficulty;
+        const right = document.createElement('div');
+        right.className = 'game-top-right';
+        const pauseBtn = document.createElement('button');
+        pauseBtn.className = 'btn-ghost';
+        pauseBtn.textContent = '暫停';
+        pauseBtn.addEventListener('click', () => pauseGame());
         const timer = document.createElement('span');
         timer.className = 'timer';
-        top.append(back, pill, timer);
+        right.append(pauseBtn, timer);
+        top.append(back, pill, right);
 
         const badge = document.createElement('div');
         badge.className = 'mascot-badge';
@@ -230,6 +248,38 @@ async function main() {
         overlay.innerHTML = '';
     }
 
+    function pauseGame() {
+        if (!game || paused) return;
+        paused = true;
+        const elapsed = Date.now() - startedAt;
+        stopTimer();
+        persist();
+        overlay.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'win-card';
+        const title = document.createElement('h2');
+        title.className = 'win-title';
+        title.textContent = '已暫停';
+        const time = document.createElement('p');
+        time.className = 'win-time';
+        time.textContent = `目前用時 ${formatTime(elapsed)}`;
+        const actions = document.createElement('div');
+        actions.className = 'win-actions';
+        actions.append(
+            actionButton('繼續', true, () => resumeGame(elapsed)),
+            actionButton('回選單', false, () => { paused = false; hideOverlay(); renderMenu(); show('menu'); })
+        );
+        card.append(title, time, actions);
+        overlay.appendChild(card);
+        overlay.classList.remove('hidden');
+    }
+
+    function resumeGame(elapsedMs) {
+        paused = false;
+        hideOverlay();
+        startTimer(elapsedMs);
+    }
+
     function startTimer(elapsedMs = 0) {
         startedAt = Date.now() - elapsedMs;
         timerId = setInterval(() => {
@@ -281,6 +331,19 @@ async function main() {
         encyclopedia.render(storage.loadCollection().unlocked);
         show('encyclopedia');
     }
+
+    function openFeedback() {
+        feedback.render();
+        show('feedback');
+    }
+
+    // Auto-pause an active game when the app is hidden (backgrounded / tab
+    // switched), so the timer never runs while the player is away.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && game && !paused && !screens.game.classList.contains('hidden')) {
+            pauseGame();
+        }
+    });
 
     // Resume an in-progress game if present.
     const saved = storage.loadSaved();

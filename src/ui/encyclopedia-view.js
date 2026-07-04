@@ -22,6 +22,23 @@ const REGION_LABELS_ZH = {
     'oceans': '海洋',
 };
 
+const SPEAKER_ICON =
+    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">'
+    + '<path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/>'
+    + '<path d="M16 8.5a4 4 0 010 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+    + '</svg>';
+
+function speak(text) {
+    const synth = window.speechSynthesis;
+    if (!synth) return null;
+    synth.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.rate = 0.98;
+    synth.speak(utter);
+    return utter;
+}
+
 export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoader) {
     let backCb = () => {};
     let _unlocked = [];
@@ -39,8 +56,8 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
         img.loading = 'lazy';
         img.addEventListener('load', () => wrap.classList.add('loaded'));
         img.addEventListener('error', () => { img.remove(); });
-        imageLoader.getImage(animal).then((url) => {
-            if (url) img.src = url;
+        imageLoader.getInfo(animal).then((info) => {
+            if (info.image) img.src = info.image;
             else img.remove();
         });
         wrap.appendChild(img);
@@ -88,11 +105,16 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
 
     function showDetail(a) {
         container.innerHTML = '';
+        window.speechSynthesis && window.speechSynthesis.cancel();
+        let englishExtract = null;
 
         const back = document.createElement('button');
         back.className = 'btn-ghost';
         back.textContent = '‹ 返回圖鑑';
-        back.addEventListener('click', () => render(_unlocked));
+        back.addEventListener('click', () => {
+            window.speechSynthesis && window.speechSynthesis.cancel();
+            render(_unlocked);
+        });
 
         const photo = document.createElement('div');
         photo.className = 'detail-photo';
@@ -104,7 +126,11 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
         img.alt = a.name_zh;
         img.addEventListener('load', () => photo.classList.add('loaded'));
         img.addEventListener('error', () => img.remove());
-        imageLoader.getImage(a).then((url) => { if (url) img.src = url; else img.remove(); });
+        const info = imageLoader.getInfo(a);
+        info.then((data) => {
+            if (data.image) img.src = data.image; else img.remove();
+            englishExtract = data.extractEn || null;
+        });
         photo.appendChild(img);
 
         const names = document.createElement('h2');
@@ -115,9 +141,36 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
         sci.className = 'detail-sci';
         sci.textContent = a.scientific;
 
+        const tts = document.createElement('button');
+        tts.className = 'btn tts-btn';
+        tts.innerHTML = SPEAKER_ICON + '<span>英文朗讀</span>';
+        const setTtsLabel = (t) => { tts.querySelector('span').textContent = t; };
+        tts.addEventListener('click', () => {
+            const synth = window.speechSynthesis;
+            if (!synth) { setTtsLabel('此裝置不支援朗讀'); return; }
+            if (synth.speaking) { synth.cancel(); setTtsLabel('英文朗讀'); return; }
+            const text = englishExtract ? `${a.name_en}. ${englishExtract}` : a.name_en;
+            const utter = speak(text);
+            if (!utter) { setTtsLabel('此裝置不支援朗讀'); return; }
+            utter.onend = () => setTtsLabel('英文朗讀');
+            utter.onerror = () => setTtsLabel('英文朗讀');
+            setTtsLabel('停止朗讀');
+        });
+
         const habitat = document.createElement('p');
         habitat.className = 'detail-habitat';
         habitat.textContent = a.habitat_zh;
+
+        // Richer intro from Chinese Wikipedia, shown when it loads (online).
+        const wiki = document.createElement('p');
+        wiki.className = 'detail-wiki';
+        wiki.hidden = true;
+        info.then((data) => {
+            if (data.extract) {
+                wiki.textContent = data.extract;
+                wiki.hidden = false;
+            }
+        });
 
         const regionCaption = document.createElement('p');
         regionCaption.className = 'detail-regions';
@@ -133,7 +186,7 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
             }
         }
 
-        container.append(back, photo, names, sci, habitat, regionCaption, mapWrap);
+        container.append(back, photo, names, sci, tts, habitat, wiki, regionCaption, mapWrap);
     }
 
     return {
