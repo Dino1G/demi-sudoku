@@ -103,7 +103,21 @@ button {
 
 /* ---------- Menu ---------- */
 
-.menu-head { margin: 8px 2px 22px; }
+.demi-hero {
+    display: flex;
+    justify-content: center;
+    margin: 4px 0 6px;
+}
+.demi-hero .demi-camel {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    border-radius: 20px;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    box-shadow: var(--shadow);
+}
+
+.menu-head { margin: 6px 2px 22px; }
 .eyebrow {
     margin: 0 0 4px;
     font-size: 12px;
@@ -395,6 +409,7 @@ button {
 }
 .enc-head h2 { margin: 0; font-size: 20px; color: var(--given); }
 .enc-progress { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent-deep); }
+.enc-credit { margin: 18px 2px 0; text-align: center; font-size: 11px; color: var(--ink-soft); }
 
 .animal-grid {
     display: grid;
@@ -406,7 +421,8 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 26px;
+    overflow: hidden;
     background: var(--panel);
     border-radius: 14px;
     box-shadow: var(--shadow-sm);
@@ -420,20 +436,52 @@ button {
     opacity: 0.7;
 }
 
-.detail-emoji {
+/* Photo badges (grid tiles, mascot, win card, detail banner) */
+.thumb, .mascot, .win-emoji, .detail-photo {
+    position: relative;
+    overflow: hidden;
+}
+.thumb { width: 100%; height: 100%; }
+.thumb img, .mascot img, .win-emoji img, .detail-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+.thumb.loaded img, .mascot.loaded img, .win-emoji.loaded img, .detail-photo.loaded img {
+    opacity: 1;
+}
+.thumb-name {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 96px;
-    height: 96px;
-    margin: 4px auto 10px;
-    font-size: 58px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 50% 35%, var(--panel) 0%, var(--panel-2) 100%);
+    text-align: center;
+    padding: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    line-height: 1.25;
+}
+.mascot .thumb-name { font-size: 10px; }
+.win-emoji .thumb-name { font-size: 13px; }
+.detail-photo .thumb-name { font-size: 15px; }
+
+.detail-photo {
+    width: 100%;
+    height: 210px;
+    margin: 2px 0 12px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     box-shadow: var(--shadow);
 }
 .detail-name { text-align: center; margin: 0 0 2px; font-size: 22px; color: var(--given); }
 .detail-sci { text-align: center; margin: 0 0 14px; font-style: italic; color: var(--ink-soft); font-size: 14px; }
+.detail-regions { text-align: center; margin: 12px 0 8px; font-size: 13.5px; color: var(--accent-deep); font-weight: 600; }
 .detail-habitat {
     background: var(--panel);
     border-radius: 14px;
@@ -443,18 +491,19 @@ button {
     box-shadow: var(--shadow-sm);
     margin-bottom: 14px;
 }
-.world-map {
+.map-wrap {
     width: 100%;
-    height: auto;
-    background: var(--panel);
+    background: #dbe7e0;
     border-radius: 14px;
     padding: 8px;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
-.world-map .region { fill: #e6d3ad; stroke: #b9944f; stroke-width: 0.6; }
-.world-map .region.highlight { fill: var(--accent); }
-.world-map .ocean-bg { fill: #dbe7e0; }
-.world-map .ocean-bg.highlight { fill: #e6c184; }
+.map-wrap svg { width: 100%; height: auto; display: block; }
+.map-wrap .country { fill: #e6d3ad; stroke: #c2a468; stroke-width: 0.4; }
+.map-wrap .country.highlight { fill: var(--accent); stroke: var(--accent-deep); }
+.map-wrap .ocean-bg { fill: #dbe7e0; }
+.map-wrap .ocean-bg.highlight { fill: #e6c184; }
 
 /* ---------- Win overlay ---------- */
 

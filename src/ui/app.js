@@ -2,6 +2,7 @@
 import { createStorage } from './../game/storage.js';
 import { createGame } from './../game/game.js';
 import { loadAnimals } from './../game/animals.js';
+import { createImageLoader } from './../game/images.js';
 import { createBoardView } from './board-view.js';
 import { createControls } from './controls.js';
 import { createMenu, formatTime } from './menu.js';
@@ -26,6 +27,24 @@ function digitCounts(values) {
     return counts;
 }
 
+// A circular photo badge for an animal: shows the Chinese name until the
+// Wikipedia photo loads, and keeps the name if none is available (offline).
+function animalPhoto(animal, imageLoader, className) {
+    const wrap = document.createElement('div');
+    wrap.className = className;
+    const name = document.createElement('span');
+    name.className = 'thumb-name';
+    name.textContent = animal.name_zh;
+    wrap.appendChild(name);
+    const img = document.createElement('img');
+    img.alt = animal.name_zh;
+    img.addEventListener('load', () => wrap.classList.add('loaded'));
+    img.addEventListener('error', () => img.remove());
+    imageLoader.getImage(animal).then((url) => { if (url) img.src = url; else img.remove(); });
+    wrap.appendChild(img);
+    return wrap;
+}
+
 async function main() {
     const storage = createStorage(window.localStorage);
     const [animalsJson, mapSvg] = await Promise.all([
@@ -33,6 +52,7 @@ async function main() {
         fetch('src/data/world-map.svg').then((r) => r.text()),
     ]);
     const animalsApi = loadAnimals(animalsJson);
+    const imageLoader = createImageLoader(window.localStorage);
     const worker = new Worker('src/engine/worker.js', { type: 'module' });
 
     let game = null;
@@ -59,7 +79,7 @@ async function main() {
     };
     const menu = createMenu(screens.menu, menuOpts);
 
-    const encyclopedia = createEncyclopediaView(screens.encyclopedia, animalsApi, mapSvg);
+    const encyclopedia = createEncyclopediaView(screens.encyclopedia, animalsApi, mapSvg, imageLoader);
     encyclopedia.onBack(() => { renderMenu(); show('menu'); });
 
     function renderMenu() {
@@ -88,9 +108,7 @@ async function main() {
 
         const badge = document.createElement('div');
         badge.className = 'mascot-badge';
-        const mascot = document.createElement('div');
-        mascot.className = 'mascot';
-        mascot.textContent = animalsApi.byId(animalId).emoji;
+        const mascot = animalPhoto(animalsApi.byId(animalId), imageLoader, 'mascot');
         badge.appendChild(mascot);
 
         const boardHost = document.createElement('div');
@@ -167,14 +185,12 @@ async function main() {
         const card = document.createElement('div');
         card.className = 'win-card';
 
-        const emoji = document.createElement('div');
-        emoji.className = 'win-emoji';
-        emoji.textContent = a.emoji;
+        const photo = animalPhoto(a, imageLoader, 'win-emoji');
 
         const title = document.createElement('h2');
         title.className = 'win-title';
         title.textContent = newly ? '解鎖新動物！' : '完成！';
-        card.append(emoji, title);
+        card.append(photo, title);
 
         if (newly) {
             const animal = document.createElement('p');

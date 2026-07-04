@@ -1,7 +1,51 @@
 // demi-sudoku/src/ui/encyclopedia-view.js
-export function createEncyclopediaView(container, animalsApi, mapSvg) {
+import { REGION_COUNTRIES } from './../data/region-map.js';
+
+const REGION_LABELS_ZH = {
+    'north-america': '北美洲',
+    'central-america': '中美洲',
+    'south-america': '南美洲',
+    'north-africa': '北非',
+    'sub-saharan-africa': '撒哈拉以南非洲',
+    'southern-africa': '非洲南部',
+    'europe': '歐洲',
+    'middle-east': '中東',
+    'central-asia': '中亞',
+    'south-asia': '南亞',
+    'east-asia': '東亞',
+    'southeast-asia': '東南亞',
+    'siberia': '西伯利亞',
+    'australia': '澳洲',
+    'oceania': '大洋洲',
+    'arctic': '北極',
+    'antarctica': '南極',
+    'oceans': '海洋',
+};
+
+export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoader) {
     let backCb = () => {};
     let _unlocked = [];
+
+    function thumb(animal) {
+        const wrap = document.createElement('div');
+        wrap.className = 'thumb';
+        const fallback = document.createElement('span');
+        fallback.className = 'thumb-name';
+        fallback.textContent = animal.name_zh;
+        wrap.appendChild(fallback);
+        const img = document.createElement('img');
+        img.className = 'thumb-img';
+        img.alt = animal.name_zh;
+        img.loading = 'lazy';
+        img.addEventListener('load', () => wrap.classList.add('loaded'));
+        img.addEventListener('error', () => { img.remove(); });
+        imageLoader.getImage(animal).then((url) => {
+            if (url) img.src = url;
+            else img.remove();
+        });
+        wrap.appendChild(img);
+        return wrap;
+    }
 
     function render(unlockedIds) {
         const unlocked = new Set(unlockedIds);
@@ -24,15 +68,22 @@ export function createEncyclopediaView(container, animalsApi, mapSvg) {
         grid.className = 'animal-grid';
         for (const a of animalsApi.list) {
             const cell = document.createElement('div');
-            cell.className = 'cellx' + (unlocked.has(a.id) ? '' : ' locked');
-            cell.textContent = unlocked.has(a.id) ? a.emoji : '?';
             if (unlocked.has(a.id)) {
+                cell.className = 'cellx';
+                cell.appendChild(thumb(a));
                 cell.addEventListener('click', () => showDetail(a));
+            } else {
+                cell.className = 'cellx locked';
+                cell.textContent = '?';
             }
             grid.appendChild(cell);
         }
 
-        container.append(header, grid);
+        const credit = document.createElement('p');
+        credit.className = 'enc-credit';
+        credit.textContent = '動物照片來源：Wikipedia / Wikimedia Commons';
+
+        container.append(header, grid, credit);
     }
 
     function showDetail(a) {
@@ -43,9 +94,18 @@ export function createEncyclopediaView(container, animalsApi, mapSvg) {
         back.textContent = '‹ 返回圖鑑';
         back.addEventListener('click', () => render(_unlocked));
 
-        const emoji = document.createElement('div');
-        emoji.className = 'detail-emoji';
-        emoji.textContent = a.emoji;
+        const photo = document.createElement('div');
+        photo.className = 'detail-photo';
+        const pFallback = document.createElement('span');
+        pFallback.className = 'thumb-name';
+        pFallback.textContent = a.name_zh;
+        photo.appendChild(pFallback);
+        const img = document.createElement('img');
+        img.alt = a.name_zh;
+        img.addEventListener('load', () => photo.classList.add('loaded'));
+        img.addEventListener('error', () => img.remove());
+        imageLoader.getImage(a).then((url) => { if (url) img.src = url; else img.remove(); });
+        photo.appendChild(img);
 
         const names = document.createElement('h2');
         names.className = 'detail-name';
@@ -59,14 +119,21 @@ export function createEncyclopediaView(container, animalsApi, mapSvg) {
         habitat.className = 'detail-habitat';
         habitat.textContent = a.habitat_zh;
 
+        const regionCaption = document.createElement('p');
+        regionCaption.className = 'detail-regions';
+        regionCaption.textContent = '分佈：' + a.regions.map((r) => REGION_LABELS_ZH[r] || r).join('、');
+
         const mapWrap = document.createElement('div');
+        mapWrap.className = 'map-wrap';
         mapWrap.innerHTML = mapSvg;
         for (const region of a.regions) {
-            const shape = mapWrap.querySelector(`#${CSS.escape(region)}`);
-            if (shape) shape.classList.add('highlight');
+            for (const countryId of REGION_COUNTRIES[region] || []) {
+                const shape = mapWrap.querySelector(`#${CSS.escape(countryId)}`);
+                if (shape) shape.classList.add('highlight');
+            }
         }
 
-        container.append(back, emoji, names, sci, habitat, mapWrap);
+        container.append(back, photo, names, sci, habitat, regionCaption, mapWrap);
     }
 
     return {

@@ -1,4 +1,4 @@
-const CACHE = 'demi-sudoku-v2';
+const CACHE = 'demi-sudoku-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -9,9 +9,11 @@ const ASSETS = [
     './src/ui/board-view.js',
     './src/ui/controls.js',
     './src/ui/encyclopedia-view.js',
+    './src/ui/brand.js',
     './src/game/storage.js',
     './src/game/game.js',
     './src/game/animals.js',
+    './src/game/images.js',
     './src/engine/grid.js',
     './src/engine/solver.js',
     './src/engine/logical-solver.js',
@@ -20,6 +22,7 @@ const ASSETS = [
     './src/engine/worker.js',
     './src/data/animals.json',
     './src/data/world-map.svg',
+    './src/data/region-map.js',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './icons/icon-maskable-512.png',
