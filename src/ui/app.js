@@ -10,7 +10,7 @@ import { createEncyclopediaView } from './encyclopedia-view.js';
 import { createFeedbackView } from './feedback-view.js';
 
 const LABELS = { easy: '簡單', medium: '中等', hard: '困難', expert: '專家' };
-const APP_VERSION = 'demi-sudoku-v4';
+const APP_VERSION = 'demi-sudoku-v5';
 
 const screens = {
     menu: document.getElementById('screen-menu'),

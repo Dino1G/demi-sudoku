@@ -34,7 +34,7 @@ function speak(text) {
     synth.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'en-US';
-    utter.rate = 0.98;
+    utter.rate = 0.9;
     synth.speak(utter);
     return utter;
 }
@@ -106,7 +106,6 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
     function showDetail(a) {
         container.innerHTML = '';
         window.speechSynthesis && window.speechSynthesis.cancel();
-        let englishExtract = null;
 
         const back = document.createElement('button');
         back.className = 'btn-ghost';
@@ -127,10 +126,7 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
         img.addEventListener('load', () => photo.classList.add('loaded'));
         img.addEventListener('error', () => img.remove());
         const info = imageLoader.getInfo(a);
-        info.then((data) => {
-            if (data.image) img.src = data.image; else img.remove();
-            englishExtract = data.extractEn || null;
-        });
+        info.then((data) => { if (data.image) img.src = data.image; else img.remove(); });
         photo.appendChild(img);
 
         const names = document.createElement('h2');
@@ -143,18 +139,17 @@ export function createEncyclopediaView(container, animalsApi, mapSvg, imageLoade
 
         const tts = document.createElement('button');
         tts.className = 'btn tts-btn';
-        tts.innerHTML = SPEAKER_ICON + '<span>英文朗讀</span>';
+        tts.innerHTML = SPEAKER_ICON + '<span>英文發音</span>';
         const setTtsLabel = (t) => { tts.querySelector('span').textContent = t; };
         tts.addEventListener('click', () => {
             const synth = window.speechSynthesis;
-            if (!synth) { setTtsLabel('此裝置不支援朗讀'); return; }
-            if (synth.speaking) { synth.cancel(); setTtsLabel('英文朗讀'); return; }
-            const text = englishExtract ? `${a.name_en}. ${englishExtract}` : a.name_en;
-            const utter = speak(text);
-            if (!utter) { setTtsLabel('此裝置不支援朗讀'); return; }
-            utter.onend = () => setTtsLabel('英文朗讀');
-            utter.onerror = () => setTtsLabel('英文朗讀');
-            setTtsLabel('停止朗讀');
+            if (!synth) { setTtsLabel('此裝置不支援發音'); return; }
+            if (synth.speaking) { synth.cancel(); setTtsLabel('英文發音'); return; }
+            const utter = speak(a.name_en);
+            if (!utter) { setTtsLabel('此裝置不支援發音'); return; }
+            utter.onend = () => setTtsLabel('英文發音');
+            utter.onerror = () => setTtsLabel('英文發音');
+            setTtsLabel('發音中…');
         });
 
         const habitat = document.createElement('p');
