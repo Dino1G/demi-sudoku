@@ -1,9 +1,9 @@
 // Player feedback form. Submits to FormSubmit.co, which emails each entry to
 // the configured inbox — no account or backend needed. Players don't sign in.
-// The first submission triggers a one-time confirmation email to activate the
-// address.
+// The endpoint uses FormSubmit's random-string alias so the destination email
+// address never appears in this public source.
 
-const ENDPOINT = 'https://formsubmit.co/ajax/dino.workhub@gmail.com';
+const ENDPOINT = 'https://formsubmit.co/ajax/357d3d8722a7a570828aed66f5a6a112';
 
 const STAR_PATH = 'M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.3l6.5-.9z';
 
